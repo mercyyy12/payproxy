@@ -10,6 +10,8 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/mercyyy12/payproxy/internal/paypal"
 )
 
 type HealthResponse struct {
@@ -54,6 +56,25 @@ func main() {
 		Handler: mux,
 	}
 
+	// Initialize PayPal client with credentials
+	paypalClient := paypal.NewClient(
+		os.Getenv("PAYPAL_CLIENT_ID"),
+		os.Getenv("PAYPAL_CLIENT_SECRET"),
+		"https://api-m.sandbox.paypal.com",
+	)
+
+	authCtx, cancelAuth := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancelAuth()
+
+	//  Ask PayPal for an access token
+	token, err := paypalClient.GetAccessToken(authCtx)
+	if err != nil {
+		slog.Error("PayPal Auth Failed", "err", err)
+	} else {
+		// Show the first 20 characters of the token to prove we got it
+		slog.Info("PayPal Auth Successful!", "token_preview", token[:20]+"...")
+	}
+
 	go func() {
 		err := serverVar.ListenAndServe()
 		if err != nil && err != http.ErrServerClosed {
@@ -62,7 +83,7 @@ func main() {
 		}
 	}()
 
-	// Wait for SIGINT (Ctrl+C) or SIGTERM (Linux kill command)
+	// Wait for SIGINT (Ctrl+C) or SIGTERM
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	<-ctx.Done()
