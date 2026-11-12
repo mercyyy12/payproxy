@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"log/slog"
 	"net/http"
@@ -12,31 +11,8 @@ import (
 	"time"
 
 	"github.com/mercyyy12/payproxy/internal/paypal"
+	"github.com/mercyyy12/payproxy/internal/server"
 )
-
-type HealthResponse struct {
-	Health string `json:"status"`
-}
-
-type ErrorResponse struct {
-	Err string `json:"error"`
-}
-
-func handleHealth(w http.ResponseWriter, r *http.Request) {
-	var resp HealthResponse
-	if r.Method != "GET" {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		json.NewEncoder(w).Encode(ErrorResponse{
-			Err: "Method not allowed",
-		})
-		return
-	}
-
-	resp = HealthResponse{
-		Health: "ok",
-	}
-	json.NewEncoder(w).Encode(resp)
-}
 
 func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
@@ -49,30 +25,19 @@ func main() {
 
 	logger.Info("Server starting on port: " + port)
 	mux := http.NewServeMux()
-	mux.HandleFunc("/health", handleHealth)
+	mux.HandleFunc("/health", server.HandleHealth)
 
-	serverVar := &http.Server{
-		Addr:    ":" + port,
-		Handler: mux,
-	}
-
-	// Initialize PayPal client with credentials
+	// initialize paypal client
 	paypalClient := paypal.NewClient(
 		os.Getenv("PAYPAL_CLIENT_ID"),
 		os.Getenv("PAYPAL_CLIENT_SECRET"),
 		"https://api-m.sandbox.paypal.com",
 	)
+	mux.HandleFunc("POST /api/v1/orders", server.HandleCreateOrder(paypalClient))
 
-	authCtx, cancelAuth := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancelAuth()
-
-	//  Ask PayPal for an access token
-	token, err := paypalClient.GetAccessToken(authCtx)
-	if err != nil {
-		slog.Error("PayPal Auth Failed", "err", err)
-	} else {
-		// Show the first 20 characters of the token to prove we got it
-		slog.Info("PayPal Auth Successful!", "token_preview", token[:20]+"...")
+	serverVar := &http.Server{
+		Addr:    ":" + port,
+		Handler: mux,
 	}
 
 	go func() {
