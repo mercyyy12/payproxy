@@ -121,12 +121,18 @@ export GEMINI_API_KEY="your_gemini_key"
 export PAYPAL_CLIENT_ID="your_paypal_client_id"
 export PAYPAL_CLIENT_SECRET="your_paypal_client_secret"
 
-go run cmd/server/main.go
+go run ./cmd/server
 ```
 
 The server starts on port 8080. Set `PORT` to use a different port.
 
-### Try it
+### Try it in the browser
+
+With the server running, open http://localhost:8080.
+
+The page has a simple form for amount, currency, merchant and purpose. Three links above the form fill in the same examples as the demo script (allowed, over the limit, wrong merchant). After you press Send request, the page shows whether the request was approved or blocked, the reason, and a link to the PayPal sandbox checkout when an order was created. A table lists all requests sent during the current session.
+
+### Try it from the command line
 
 In a second terminal, with the server running:
 
@@ -181,7 +187,7 @@ The image uses a multi-stage build, so the final image only contains the compile
 ## Project structure
 
 ```text
-cmd/server/            Entry point, wiring, graceful shutdown
+cmd/server/            Entry point, wiring, graceful shutdown. Also holds the web page: index.html, styles.css, script.js
 internal/server/       HTTP handlers (orders and health)
 internal/guardrail/    Spending limit rules, safe for concurrent requests
 internal/evaluator/    Gemini fraud check
@@ -195,7 +201,7 @@ scripts/               Demo script
 - Limits are checked first. They are cheap and need no network call, so obvious bad requests never reach the AI or PayPal.
 - Thread safe. The spending counter is protected by a mutex, so many agents sending requests at once cannot skip the limit.
 - Human approval. PayProxy creates the order but does not capture it. A person approves the final payment.
-- Standard library only. No third party dependencies.
+- Standard library only. No third party dependencies. The web page files are built into the server binary.
 - Production basics. JSON logs with `log/slog`, timeouts on all outside calls, and a clean shutdown on SIGINT and SIGTERM.
 
 ## Current limitations
@@ -205,6 +211,7 @@ scripts/               Demo script
 - Limits assume USD amounts.
 - The endpoint has no authentication yet. Run it only on a trusted network.
 - Orders are created but not captured by PayProxy.
+- The web page keeps its request history in the browser only, so it clears on refresh.
 
 ## Ideas for next steps
 
@@ -212,7 +219,7 @@ scripts/               Demo script
 - Store spending in a database, with a real daily reset
 - Capture orders after approval and listen for PayPal webhooks
 - Merchant allow lists and deny lists
-- A small dashboard that shows approved and blocked requests
+- Keep request history on the server so the web page shows past requests after a refresh
 
 ## License
 
