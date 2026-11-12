@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/mercyyy12/payproxy/internal/evaluator"
 	"github.com/mercyyy12/payproxy/internal/guardrail"
 	"github.com/mercyyy12/payproxy/internal/paypal"
 )
@@ -24,7 +25,7 @@ type AgentOrderResponse struct {
 }
 
 // receives incoming agent requests and creates a PayPal order
-func HandleCreateOrder(paypalClient *paypal.Client, guard *guardrail.Manager) http.HandlerFunc {
+func HandleCreateOrder(paypalClient *paypal.Client, guard *guardrail.Manager, ai *evaluator.Evaluator) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
@@ -51,6 +52,24 @@ func HandleCreateOrder(paypalClient *paypal.Client, guard *guardrail.Manager) ht
 			w.WriteHeader(http.StatusForbidden)
 			json.NewEncoder(w).Encode(&ErrorResponse{
 				Err: "Guardrail blocked transaction: " + err.Error(),
+			})
+			return
+		}
+
+		// run AI fraud inspection
+		assessment, err := ai.Assess(r.Context(), req.Merchant, req.Purpose)
+		if err != nil {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			json.NewEncoder(w).Encode(&ErrorResponse{
+				Err: "Transaction halted: " + err.Error(),
+			})
+			return
+		}
+
+		if assessment.Flagged || assessment.RiskScore > 50 {
+			w.WriteHeader(http.StatusForbidden)
+			json.NewEncoder(w).Encode(&ErrorResponse{
+				Err: "AI Security Block: " + assessment.Reason,
 			})
 			return
 		}
