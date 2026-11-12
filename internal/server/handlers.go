@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/mercyyy12/payproxy/internal/guardrail"
 	"github.com/mercyyy12/payproxy/internal/paypal"
 )
 
@@ -23,7 +24,7 @@ type AgentOrderResponse struct {
 }
 
 // receives incoming agent requests and creates a PayPal order
-func HandleCreateOrder(paypalClient *paypal.Client) http.HandlerFunc {
+func HandleCreateOrder(paypalClient *paypal.Client, guard *guardrail.Manager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
@@ -42,6 +43,14 @@ func HandleCreateOrder(paypalClient *paypal.Client) http.HandlerFunc {
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(ErrorResponse{
 				Err: "Amount and Currency is required.",
+			})
+			return
+		}
+
+		if err := guard.CheckAndReserve(req.Amount); err != nil {
+			w.WriteHeader(http.StatusForbidden)
+			json.NewEncoder(w).Encode(&ErrorResponse{
+				Err: "Guardrail blocked transaction: " + err.Error(),
 			})
 			return
 		}

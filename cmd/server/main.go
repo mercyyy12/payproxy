@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/mercyyy12/payproxy/internal/guardrail"
 	"github.com/mercyyy12/payproxy/internal/paypal"
 	"github.com/mercyyy12/payproxy/internal/server"
 )
@@ -33,7 +34,8 @@ func main() {
 		os.Getenv("PAYPAL_CLIENT_SECRET"),
 		"https://api-m.sandbox.paypal.com",
 	)
-	mux.HandleFunc("POST /api/v1/orders", server.HandleCreateOrder(paypalClient))
+	guard := guardrail.NewManager(50.00, 100.00)
+	mux.HandleFunc("POST /api/v1/orders", server.HandleCreateOrder(paypalClient, guard))
 
 	serverVar := &http.Server{
 		Addr:    ":" + port,
