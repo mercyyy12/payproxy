@@ -96,7 +96,7 @@ func (e *Evaluator) Assess(ctx context.Context, merchant, purpose string) (*Risk
 		return nil, fmt.Errorf("failed to marshal gemini request: %w", err)
 	}
 
-	url := "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + e.apiKey
+	url := "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=" + e.apiKey
 	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(jsonData))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create gemini request: %w", err)
