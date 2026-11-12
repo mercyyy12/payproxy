@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PayProxy</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="page">
+      <h1>PayProxy</h1>
+      <p>Payment requests from an AI agent are checked here before a PayPal order is created.</p>
+      <p class="small">Rules: no single payment over $50, no more than $100 in total, and the AI must agree the merchant matches the purpose.</p>
+
+      <h2>Send a payment request</h2>
+
+      <p class="small examples">
+        Fill with an example:
+        <a onclick="fillExample(0)">Allowed</a>
+        <a onclick="fillExample(1)">Over the limit</a>
+        <a onclick="fillExample(2)">Wrong merchant</a>
+      </p>
+
+      <div class="row">
+        <div>
+          <label for="amount">Amount</label>
+          <input id="amount" value="15.00" autocomplete="off" />
+        </div>
+        <div>
+          <label for="currency">Currency</label>
+          <input id="currency" value="USD" autocomplete="off" />
+        </div>
+      </div>
+
+      <label for="merchant">Merchant</label>
+      <input id="merchant" value="Render" autocomplete="off" />
+
+      <label for="purpose">Purpose</label>
+      <input id="purpose" value="Deploy backend service" autocomplete="off" />
+
+      <button id="send" onclick="sendRequest()">Send request</button>
+
+      <div id="result"></div>
+
+      <h2>Requests from this session</h2>
+      <div class="wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Merchant</th>
+              <th>Amount</th>
+              <th>Purpose</th>
+              <th>Result</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody id="history">
+            <tr id="empty">
+              <td colspan="6">No requests yet.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </body>
+  <script src="script.js"></script>
+</html>

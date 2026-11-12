@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"log"
 	"log/slog"
 	"net/http"
@@ -16,6 +17,15 @@ import (
 	"github.com/mercyyy12/payproxy/internal/server"
 )
 
+//go:embed index.html
+var indexHTML []byte
+
+//go:embed styles.css
+var stylesCSS []byte
+
+//go:embed script.js
+var scriptJS []byte
+
 func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
@@ -28,6 +38,21 @@ func main() {
 	logger.Info("Server starting on port: " + port)
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", server.HandleHealth)
+
+	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Write(indexHTML)
+	})
+
+	mux.HandleFunc("GET /styles.css", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/css; charset=utf-8")
+		w.Write(stylesCSS)
+	})
+
+	mux.HandleFunc("GET /script.js", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/javascript; charset=utf-8")
+		w.Write(scriptJS)
+	})
 
 	// initialize paypal client
 	paypalClient := paypal.NewClient(
