@@ -213,14 +213,6 @@ scripts/               Demo script
 - Orders are created but not captured by PayProxy.
 - The web page keeps its request history in the browser only, so it clears on refresh.
 
-## Ideas for next steps
-
-- Per agent API keys and per agent budgets
-- Store spending in a database, with a real daily reset
-- Capture orders after approval and listen for PayPal webhooks
-- Merchant allow lists and deny lists
-- Keep request history on the server so the web page shows past requests after a refresh
-
 ## License
 
 MIT. See the LICENSE file.
